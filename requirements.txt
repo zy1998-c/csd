@@ -1,0 +1,9 @@
+accelerate>=0.27
+datasets>=2.16
+numpy>=1.24
+peft>=0.10
+scipy>=1.10
+sentencepiece>=0.1.99
+torch>=2.1
+transformers>=4.37
+trl>=0.8

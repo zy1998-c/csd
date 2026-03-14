@@ -1,0 +1,102 @@
+{
+  "1_Stephen_King_Reject_Replace01": {
+    "file_name": "RWKU/Target/1_Stephen_King/reject_replace01.json",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "counterfactual": "counterfactual_instructions"
+    }
+  },
+  "2_Confucius_Reject_Replace01": {
+    "file_name": "RWKU/Target/2_Confucius/reject_replace01.json",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "counterfactual": "counterfactual_instructions"
+    }
+  },
+  "3_Bruce_Lee_Reject_Replace01": {
+    "file_name": "RWKU/Target/3_Bruce_Lee/reject_replace01.json",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "counterfactual": "counterfactual_instructions"
+    }
+  },
+  "4_Warren_Buffett_Reject_Replace01": {
+    "file_name": "RWKU/Target/4_Warren_Buffett/reject_replace01.json",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "counterfactual": "counterfactual_instructions"
+    }
+  },
+  "5_Christina_Aguilera_Reject_Replace01": {
+    "file_name": "RWKU/Target/5_Christina_Aguilera/reject_replace01.json",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "counterfactual": "counterfactual_instructions"
+    }
+  },
+  "6_Cindy_Crawford_Reject_Replace01": {
+    "file_name": "RWKU/Target/6_Cindy_Crawford/reject_replace01.json",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "counterfactual": "counterfactual_instructions"
+    }
+  },
+  "7_Marie_Osmond_Reject_Replace01": {
+    "file_name": "RWKU/Target/7_Marie_Osmond/reject_replace01.json",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "counterfactual": "counterfactual_instructions"
+    }
+  },
+  "8_Paris_Hilton_Reject_Replace01": {
+    "file_name": "RWKU/Target/8_Paris_Hilton/reject_replace01.json",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "counterfactual": "counterfactual_instructions"
+    }
+  },
+  "9_Justin_Bieber_Reject_Replace01": {
+    "file_name": "RWKU/Target/9_Justin_Bieber/reject_replace01.json",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "counterfactual": "counterfactual_instructions"
+    }
+  },
+  "10_Prince_Harry,_Duke_of_Sussex_Reject_Replace01": {
+    "file_name": "RWKU/Target/10_Prince_Harry,_Duke_of_Sussex/reject_replace01.json",
+    "formatting": "alpaca",
+    "columns": {
+      "prompt": "instruction",
+      "query": "input",
+      "response": "output",
+      "counterfactual": "counterfactual_instructions"
+    }
+  }
+}

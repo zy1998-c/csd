@@ -52,11 +52,28 @@ class CSDTrainer(Trainer):
     def _run_without_grad(self, model: torch.nn.Module, fn):
         was_training = model.training
         model.eval()
-        with torch.no_grad():
-            outputs = fn()
-        if was_training:
-            model.train()
-        return outputs
+        try:
+            with torch.no_grad():
+                return fn()
+        finally:
+            model.train(was_training)
+
+    def _response_mask(self, token_ids):
+        mask = torch.ones_like(token_ids, dtype=torch.bool)
+        if self.eos_token_id is not None:
+            eos = token_ids.eq(self.eos_token_id)
+            # Include the first EOS; exclude all subsequent generated padding.
+            mask &= (eos.cumsum(dim=-1) - eos.long()).eq(0)
+        if self.pad_token_id is not None and self.pad_token_id != self.eos_token_id:
+            mask &= token_ids.ne(self.pad_token_id)
+        return mask
+
+    @staticmethod
+    def _forward(model, input_ids, attention_mask):
+        position_ids = attention_mask.long().cumsum(-1) - 1
+        position_ids.masked_fill_(attention_mask.eq(0), 0)
+        return model(input_ids=input_ids, attention_mask=attention_mask,
+                     position_ids=position_ids, use_cache=False, return_dict=True)
 
     def compute_loss(self, model, inputs: Dict[str, torch.Tensor], return_outputs: bool = False, **kwargs):
         sensitive_input_ids = inputs["sensitive_input_ids"]
@@ -80,9 +97,10 @@ class CSDTrainer(Trainer):
             raise ValueError("CSD requires non-empty sensitive and counterfactual prompts.")
 
         # Step 1: on-policy rollout in the sensitive context x.
+        generation_model = self.accelerator.unwrap_model(model)
         generated_ids = self._run_without_grad(
             model,
-            lambda: model.generate(
+            lambda: generation_model.generate(
                 input_ids=sensitive_input_ids,
                 attention_mask=sensitive_attention_mask,
                 do_sample=True,
@@ -104,22 +122,19 @@ class CSDTrainer(Trainer):
             loss = student_outputs.logits.sum() * 0.0
             return (loss, student_outputs) if return_outputs else loss
 
-        if self.pad_token_id is not None and self.pad_token_id != self.eos_token_id:
-            generated_y_mask = (generated_y_ids != self.pad_token_id).to(sensitive_attention_mask.dtype)
-        else:
-            generated_y_mask = torch.ones_like(generated_y_ids, dtype=sensitive_attention_mask.dtype)
+        generated_y_mask = self._response_mask(generated_y_ids).to(sensitive_attention_mask.dtype)
 
         # Step 2: student forward with gradients on [x ; y].
         student_input_ids = torch.cat([sensitive_input_ids, generated_y_ids], dim=1)
         student_attention_mask = torch.cat([sensitive_attention_mask, generated_y_mask], dim=1)
-        student_outputs = model(input_ids=student_input_ids, attention_mask=student_attention_mask, return_dict=True)
+        student_outputs = self._forward(model, student_input_ids, student_attention_mask)
 
         # Decoder-only token alignment:
         # logits at position t predict token at t + 1.
         student_logits_y = student_outputs.logits[
             :, sensitive_seq_len - 1 : sensitive_seq_len + generated_len - 1, :
         ]
-        student_log_probs = F.log_softmax(student_logits_y, dim=-1)
+        student_log_probs = F.log_softmax(student_logits_y.float(), dim=-1)
 
         # Step 3: teacher forward in K counterfactual contexts x' for the same sampled y.
         expanded_y_ids = generated_y_ids.unsqueeze(1).expand(batch_size, num_counterfactual, generated_len)
@@ -131,11 +146,7 @@ class CSDTrainer(Trainer):
         merged_teacher_attention_mask = teacher_attention_mask.reshape(batch_size * num_counterfactual, -1)
         merged_teacher_logits = self._run_without_grad(
             model,
-            lambda: model(
-                input_ids=merged_teacher_input_ids,
-                attention_mask=merged_teacher_attention_mask,
-                return_dict=True,
-            ).logits,
+            lambda: self._forward(model, merged_teacher_input_ids, merged_teacher_attention_mask).logits,
         )
         if merged_teacher_logits.device != student_logits_y.device:
             merged_teacher_logits = merged_teacher_logits.to(student_logits_y.device)
@@ -148,7 +159,7 @@ class CSDTrainer(Trainer):
         ]
 
         # Step 4: average the teacher distributions over counterfactual contexts.
-        teacher_probs = F.softmax(teacher_logits_y, dim=-1)
+        teacher_probs = F.softmax(teacher_logits_y.float(), dim=-1)
         counterfactual_ctx_mask = counterfactual_ctx_mask.to(teacher_probs.dtype).unsqueeze(-1).unsqueeze(-1)
         target_probs = (teacher_probs * counterfactual_ctx_mask).sum(dim=1)
         target_probs = target_probs / counterfactual_ctx_mask.sum(dim=1).clamp_min(1.0)

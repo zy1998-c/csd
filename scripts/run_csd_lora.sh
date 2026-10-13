@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
 
-LLAMA_FACTORY_ROOT="${LLAMA_FACTORY_ROOT:-${REPO_ROOT}/../LLaMA-Factory}"
+LLAMA_FACTORY_ROOT="${LLAMA_FACTORY_ROOT:-${REPO_ROOT}/vendor/RWKU/LLaMA-Factory}"
 MODEL_NAME_OR_PATH="${MODEL_NAME_OR_PATH:-meta-llama/Llama-3.1-8B-Instruct}"
 DATASET_DIR="${DATASET_DIR:-${REPO_ROOT}/data}"
 DATASET="${DATASET:-1_Stephen_King_Reject_Replace01}"
@@ -13,7 +13,14 @@ TEMPLATE="${TEMPLATE:-llama3}"
 LEARNING_RATE="${LEARNING_RATE:-3e-5}"
 NUM_TRAIN_EPOCHS="${NUM_TRAIN_EPOCHS:-3.0}"
 K="${K:-3}"
-PRECISION_FLAG="${PRECISION_FLAG:---bf16}"
+PRECISION_FLAG="${PRECISION_FLAG---bf16}"
+
+mkdir -p "${OUTPUT_DIR}"
+OUTPUT_DIR=$(cd "${OUTPUT_DIR}" && pwd)
+DATASET_DIR=$(cd "${DATASET_DIR}" && pwd)
+if [ -d "${MODEL_NAME_OR_PATH}" ]; then
+  MODEL_NAME_OR_PATH=$(cd "${MODEL_NAME_OR_PATH}" && pwd)
+fi
 
 bash "${REPO_ROOT}/scripts/apply_overlay.sh" "${LLAMA_FACTORY_ROOT}"
 
@@ -30,10 +37,9 @@ PYTHONPATH=./ WANDB_DISABLED=true python src/train_bash.py \
   --lora_target q_proj,v_proj \
   --output_dir "${OUTPUT_DIR}" \
   --overwrite_cache \
-  --overwrite_output_dir \
   --cutoff_len 512 \
   --preprocessing_num_workers 4 \
-  --per_device_train_batch_size 4 \
+  --per_device_train_batch_size "${BATCH_SIZE:-1}" \
   --gradient_accumulation_steps 4 \
   --lr_scheduler_type cosine \
   --logging_steps 10 \
@@ -49,4 +55,5 @@ PYTHONPATH=./ WANDB_DISABLED=true python src/train_bash.py \
   --csd_rollout_temperature 1.0 \
   --csd_rollout_top_p 0.95 \
   --csd_num_counterfactual "${K}" \
-  "${PRECISION_FLAG}"
+  ${PRECISION_FLAG:+"${PRECISION_FLAG}"} \
+  "$@"

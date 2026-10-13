@@ -15,6 +15,14 @@ if [ ! -f "${TARGET_ROOT}/src/train_bash.py" ]; then
   exit 1
 fi
 
+if [ ! -d "${TARGET_ROOT}/src/llmtuner/train/ga" ]; then
+  echo "CSD requires the RWKU fork at b8a03b3. Run bash scripts/setup.sh."
+  exit 1
+fi
+if [ "$(git -C "${TARGET_ROOT}" rev-parse HEAD)" != "b8a03b3ce34fb4a96001df545a56558d75a078a3" ]; then
+  echo "Unsupported base revision. Run bash scripts/setup.sh for the pinned RWKU checkout."
+  exit 1
+fi
 cp -R "${REPO_ROOT}/overlay/src/." "${TARGET_ROOT}/src/"
 
 echo "Applied the CSD overlay to ${TARGET_ROOT}"

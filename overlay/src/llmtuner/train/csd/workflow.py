@@ -110,6 +110,7 @@ def run_csd(
                 param.requires_grad = False
 
     training_args.remove_unused_columns = False
+    training_args.label_names = ["sensitive_input_ids"]
 
     trainer = CSDTrainer(
         model=model,
@@ -130,3 +131,8 @@ def run_csd(
             trainer.save_state()
             if trainer.is_world_process_zero() and finetuning_args.plot_loss:
                 plot_loss(training_args.output_dir, keys=["loss", "eval_loss"])
+
+    if training_args.do_eval:
+        metrics = trainer.evaluate(metric_key_prefix="eval")
+        trainer.log_metrics("eval", metrics)
+        trainer.save_metrics("eval", metrics)

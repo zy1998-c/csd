@@ -18,7 +18,9 @@ python -m pip check
 python scripts/smoke_test.py
 ```
 
-Without conda, use `python3.10 -m venv .venv` and `source .venv/bin/activate`. Skip the CUDA wheel installation command on CPU or macOS. `setup.sh` installs pinned dependencies, downloads NLTK punkt, and downloads the official RWKU base into `vendor/RWKU` at commit `b8a03b3ce34fb4a96001df545a56558d75a078a3`. Do not use the latest LLaMA-Factory: it has renamed `llmtuner` to `llamafactory` and does not include the RWKU modules.
+Without conda, use `python3.10 -m venv .venv` and `source .venv/bin/activate`. Skip the CUDA wheel installation command on CPU or macOS. `setup.sh` installs pinned dependencies, downloads NLTK punkt, and downloads the official RWKU base into `vendor/RWKU` at commit `b8a03b3ce34fb4a96001df545a56558d75a078a3`. That pinned RWKU checkout includes the complete compatible `LLaMA-Factory` source tree; `setup.sh` applies this repository's CSD overlay to it automatically. You do not need to download or copy LLaMA-Factory separately. Do not use the latest LLaMA-Factory: it has renamed `llmtuner` to `llamafactory` and does not include the RWKU modules.
+
+The LLaMA-Factory source is intentionally downloaded during setup instead of duplicated in this repository. This keeps the repository small while pinning the exact upstream commit required by the scripts. After `bash scripts/setup.sh` succeeds, the Train commands below are self-contained.
 
 `smoke_test.py` uses a locally initialized tiny model and test fixtures without downloading model weights or RWKU data. It executes full and LoRA training, validation, checkpoint saving and reloading, and all nine evaluation groups. It verifies the execution pipeline, not unlearning efficacy.
 

@@ -87,11 +87,22 @@ def main():
             subprocess.run(["bash", str(ROOT / f"scripts/run_csd_{kind}.sh"),
                 "--max_steps", "1", "--max_samples", "4", "--cutoff_len", "64",
                 "--csd_rollout_max_new_tokens", "3", "--gradient_accumulation_steps", "1",
+                "--warmup_steps", "0", "--learning_rate", "0.001",
                 "--use_cpu", "--report_to", "none", "--do_eval", "--val_size", "0.5",
                 "--disable_tqdm", "true", "--plot_loss", "false"],
                 env=dict(env, OUTPUT_DIR=str(output)), check=True, cwd=ROOT)
             assert (output / "trainer_state.json").exists()
             assert math.isfinite(json.loads((output / "eval_results.json").read_text())["eval_loss"])
+            if kind == "full":
+                reloaded = LlamaForCausalLM.from_pretrained(output)
+            else:
+                from peft import PeftModel
+                reloaded = PeftModel.from_pretrained(
+                    LlamaForCausalLM.from_pretrained(model_dir), output
+                ).merge_and_unload()
+            assert any(not torch.equal(value, reloaded.state_dict()[name])
+                       for name, value in model.state_dict().items()), "Optimizer did not update weights"
+            del reloaded
             command = [sys.executable, str(ROOT / "scripts/evaluate_rwku.py"),
                 "--model", str(output if kind == "full" else model_dir),
                 "--data-dir", str(folder / "eval"), "--output-dir", str(folder / f"metrics-{kind}"),
